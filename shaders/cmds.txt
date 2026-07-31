@@ -1,0 +1,2 @@
+shaderc.exe -f vs_voxel.sc -o vs_voxel.bin --type vertex --platform windows -p s_5_0 -i "C:\Users\vitop\Desktop\GAME_ENGINE\external\bgfx\src" --varyingdef "C:\Users\vitop\Desktop\GAME_ENGINE\external\bgfx\examples\common\ps\varying.def.sc"
+shaderc.exe -f fs_voxel.sc -o fs_voxel.bin --type fragment --platform windows -p s_5_0 -i "C:\Users\vitop\Desktop\GAME_ENGINE\external\bgfx\src" --varyingdef "C:\Users\vitop\Desktop\GAME_ENGINE\external\bgfx\examples\common\nanovg\varying.def.sc"
