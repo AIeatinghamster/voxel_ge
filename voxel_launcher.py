@@ -564,10 +564,7 @@ class VoxelLauncher:
         
 
 
-        """print(
-            "Opening editor:",
-            project["path"]
-        )"""
+
         self.root.destroy()
         v1_ui.start(project["path"])
         sys.exit()
