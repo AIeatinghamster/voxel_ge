@@ -134,19 +134,24 @@ const Face faces[6] =
     // Top
     {{
         {0,1,0,0,0},
-        {1,1,0,1,0},
-        {0,1,1,0,1},
+        {0,1,1,1,0},
+        {1,1,0,0,1},
         {1,1,1,1,1}
     }},
 
     // Bottom
     {{
         {0,0,1,0,0},
+        {0,0,0,1,0},
+        {1,0,1,0,1},
+        {1,0,0,1,1}
+    }},
+    /*{{
+        {0,0,1,0,0},
         {1,0,1,1,0},
         {0,0,0,0,1},
         {1,0,0,1,1}
-    }},
-
+    }},*/
     // Right
     {{
         {1,0,1,0,0},
@@ -205,6 +210,14 @@ class Mesh{
             indices.push_back(start + 1);
             indices.push_back(start + 2);
             indices.push_back(start + 3);
+
+            /*indices.push_back(start + 0);
+            indices.push_back(start + 1);
+            indices.push_back(start + 2);
+
+            indices.push_back(start + 2);
+            indices.push_back(start + 1);
+            indices.push_back(start + 3);*/
         }
 };
 struct Block
@@ -264,7 +277,7 @@ class Chunk{
             for (int y=0;y<chunk_height; y++){
                 for (int z=0; z<chunk_size; z++){
                     Block& block=blocks[index(x,y,z)];
-                    //std::vector<std::array<int,3>> faces_to_show_in_this_block;
+
                     if (!block.isSolid()){
                         continue;
                     }
@@ -272,36 +285,43 @@ class Chunk{
                     int global_blockZ = position.z * chunk_size + z;
                     //x+
                     if (isAir(global_blockX+1,y,global_blockZ)){
-                        //faces_to_show_in_this_block.push_back({x+1,y,z})
+
                         mesh.addFace(2,x,y,z);
                     }
                     //x-
                     if (isAir(global_blockX-1,y,global_blockZ)){
-                        //faces_to_show_in_this_block.push_back({x-1,y,z})
+
                         mesh.addFace(3,x,y,z);
                     }
                     //z+
                     if (isAir(global_blockX,y,global_blockZ+1)){
-                        //faces_to_show_in_this_block.push_back({x,y,z+1})
+
                         mesh.addFace(4,x,y,z);
                     }
                     //z-
                     if (isAir(global_blockX,y,global_blockZ-1)){
-                        //faces_to_show_in_this_block.push_back({x,y,z-1})
                         mesh.addFace(5,x,y,z);
                     }
                     //y+
                     if ((isAir(global_blockX,y-1,global_blockZ))){
-                        //faces_to_show_in_this_block.push_back({x,y+1,z})
-                        mesh.addFace(0,x,y,z);
+
+                        mesh.addFace(1,x,y,z);
                     }
                     //y-
                     if (isAir(global_blockX,y+1,global_blockZ)){
-                        //faces_to_show_in_this_block.push_back({x,y-1,z})
-                        mesh.addFace(1,x,y,z);
+                        mesh.addFace(0,x,y,z);
                     }
                 }
             }
+            /*mesh.vertices.clear();
+            mesh.indices.clear();
+
+            mesh.addFace(0, 0, 0, 0);
+            mesh.addFace(1, 0, 0, 0);
+            mesh.addFace(2, 0, 0, 0);
+            mesh.addFace(3, 0, 0, 0);
+            mesh.addFace(4, 0, 0, 0);
+            mesh.addFace(5, 0, 0, 0);*/
         }
         std::cout<< "meshed\n";
 
@@ -417,10 +437,14 @@ int main(){
                 std::cout << "no_chunks\n";
                 continue;
             }
-            
             bgfx::setViewClear(0,BGFX_CLEAR_COLOR|BGFX_CLEAR_DEPTH, 0x303030ff);
             bgfx::setViewRect(0,0,0,width,height);
-            //bgfx::setState(BGFX_STATE_WRITE_RGB|BGFX_STATE_WRITE_Z|BGFX_STATE_DEAPTH_TEST_LESS|BGFX_CULL_CCW);
+            /*bgfx::setState(
+                BGFX_STATE_WRITE_RGB |
+                BGFX_STATE_WRITE_Z |
+                BGFX_STATE_DEPTH_TEST_LESS |
+                BGFX_STATE_CULL_CCW//cw
+            );*/
             bgfx::setVertexBuffer(0,chunk.vbh);
             bgfx::setIndexBuffer(chunk.ibh);
             bgfx::submit(0,program);
