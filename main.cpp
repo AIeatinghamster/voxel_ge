@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
 #include <SDL3/SDL.h>
 //#include <SDL3/SDL_main.h>
 #include <bgfx/bgfx.h>
@@ -14,6 +15,8 @@
 #include <imgui.h>
 #include <unordered_map>
 #include <fstream>
+bool runing_game=false;
+using json = nlohmann::json;
 
 std::string vs="shaders/vs_voxel.bin";
 std::string fs="shaders/fs_voxel.bin";
@@ -34,6 +37,154 @@ std::string fs="shaders/fs_voxel.bin";
     std::cout << "5\n";
     return bgfx::createShader(mem);
 }*/
+struct Pos{
+    float x=0;
+    float y=0;
+    float z=0;
+};
+struct Rot{
+    float x=0;
+    float y=0;
+    float z=0;
+};
+struct Scale{
+    float x=1;
+    float y=1;
+    float z=1;
+};
+struct Transform{
+    Pos position;
+    Rot rotation;
+    Scale scale;
+};
+class Node {
+private:
+    int cbsuid_max = 0;
+
+public:
+    std::string name = "new_node";
+    std::vector<std::unique_ptr<Node>> children;
+    Node* parent = nullptr;
+    int suid = 0; // scene uid
+    int guid = 0; // global uid
+    bool is_inheret = false;
+    std::string inhereting_scene = "";
+    Transform transform;
+
+    nlohmann::json to_dict() {
+        nlohmann::json to_save;
+        nlohmann::json transform_save;
+        nlohmann::json children_save;
+
+        to_save["name"] = name;
+        to_save["suid"] = suid;
+        to_save["guid"] = guid;
+        to_save["is_inheret"] = is_inheret;
+        to_save["inhereting_scene"] = inhereting_scene;
+
+        transform_save["position"] = std::array<float, 3>{
+            transform.position.x,
+            transform.position.y, 
+            transform.position.z
+        };
+        transform_save["rotation"] = std::array<float, 3>{
+            transform.rotation.x,
+            transform.rotation.y, 
+            transform.rotation.z
+        };
+        transform_save["scale"] = std::array<float, 3>{
+            transform.scale.x,
+            transform.scale.y, 
+            transform.scale.z
+        };
+        
+        to_save["transform"] = transform_save;
+        for (const auto& child : children) {
+            if (child) {
+                children_save[std::to_string(child->suid)] = child->to_dict();
+            }
+        }
+        to_save["children"] = children_save;
+        return to_save;
+    }
+
+    void save_tree(const std::string& filename) {
+        nlohmann::json save = to_dict();
+        std::ofstream file(filename);
+        if (file.is_open()) {
+            file << save.dump(4);
+        }
+    }
+
+    void make_tree_inheret(const std::string& scene_file) {
+        if (!runing_game) {
+            is_inheret = true;
+            inhereting_scene = scene_file;
+            for (auto& child : children) {
+                if (child) {
+                    child->is_inheret = true;
+                }
+            }
+            save_tree(name); 
+        }
+    }
+
+    void add_child(std::unique_ptr<Node> node) {
+        if (!node) return;
+        node->parent = this;
+        node->suid = ++cbsuid_max;
+        children.push_back(std::move(node));
+    }
+
+    void remove_child(Node* node) {
+        children.erase(
+            std::remove_if(children.begin(), children.end(),
+                [node](const std::unique_ptr<Node>& c) { return c.get() == node; }),
+            children.end()
+        );
+    }
+
+    void remove_child_at_idx(int idx) {
+        if (idx >= 0 && idx < static_cast<int>(children.size())) {
+            children.erase(children.begin() + idx);
+        }
+    }
+
+    void rename(const std::string& nn) {
+        name = nn;
+    }
+
+    void reparent(Node* new_parent) {
+        if (!new_parent) return;
+        parent = new_parent;
+        suid = ++new_parent->cbsuid_max;
+    }
+
+    void move_by(float dx, float dy, float dz) {
+        transform.position.x += dx;
+        transform.position.y += dy;
+        transform.position.z += dz;
+    }
+
+    void rotate_by(float dx, float dy, float dz) {
+        transform.rotation.x += dx;
+        transform.rotation.y += dy;
+        transform.rotation.z += dz;
+    }
+
+    void move_to(float x, float y, float z) {
+        transform.position.x = x;
+        transform.position.y = y;
+        transform.position.z = z;
+    }
+
+    void set_rotation(float x, float y, float z) {
+        transform.rotation.x = x;
+        transform.rotation.y = y;
+        transform.rotation.z = z;
+    }
+};
+
 bgfx::ShaderHandle loadShader(const char* path){
     FILE* file=fopen(path,"rb");
     if (!file){
@@ -102,18 +253,7 @@ struct hash<ChunkPos>
     }
 };
 }
-class Node{
-    int uid=0;
-    std::string name = "NewNode";
-    float position_x=0;
-    float position_y=0;
-    float position_z=0;
-    float rotation_x=0;
-    float rotation_y=0;
-    float rotation_z=0;
-    float scale=1;
-    std::vector<Node> children;
-};
+
 
 class Scene{
     Node root_node;
